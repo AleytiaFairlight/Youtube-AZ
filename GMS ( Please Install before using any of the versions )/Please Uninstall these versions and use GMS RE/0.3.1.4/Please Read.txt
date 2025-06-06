@@ -1,0 +1,7 @@
+If your using a Android Device please download
+
+app.revanced.android.gms-240913008-signed.apk
+
+If your using a Huawei please download
+
+app.revanced.android.gms-240913008-hw-signed.apk
