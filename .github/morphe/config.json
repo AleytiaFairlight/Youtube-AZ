@@ -1,0 +1,63 @@
+{
+  "start_patches_version": "1.41.0",
+  "patches_repo": "MorpheApp/morphe-patches",
+  "morphe_desktop_repo": "MorpheApp/morphe-desktop",
+  "morphe_desktop_version": "latest",
+  "stock_release_tag": "stock-apks",
+  "signing_cert_sha256": "93B3D3E61DBA61AA5C949C2E66AAB00A2A4316B363B602A40388EBC0EF0BF5C5",
+  "apps": [
+    {
+      "name": "YouTube",
+      "package": "com.google.android.youtube",
+      "app_name": "YouTube AZ",
+      "asset_prefix": "YouTube-AZ",
+      "disabled_patches": [
+        "Add to queue",
+        "Bypass link redirects",
+        "Change installer source",
+        "Clone app",
+        "Copy video link",
+        "Disable fullscreen gestures",
+        "Disable Play Store updates",
+        "Network proxy",
+        "Open channel of live avatar",
+        "Override certificate pinning",
+        "Playback in feeds",
+        "Save to watch later",
+        "Settings menu filter",
+        "Voice over translation",
+        "Wide search bar"
+      ]
+    },
+    {
+      "name": "YouTube Music",
+      "package": "com.google.android.apps.youtube.music",
+      "app_name": "YouTube Music AZ",
+      "asset_prefix": "YouTube-Music-AZ",
+      "disabled_patches": [
+        "Change installer source",
+        "Clone app",
+        "Crossfade",
+        "Disable dislike redirection",
+        "Disable Play Store updates",
+        "Downloads",
+        "Enable swipe to dismiss miniplayer",
+        "Hide filter bar",
+        "Hide flyout menu components",
+        "Hide layout components",
+        "Hide music action buttons",
+        "Network proxy",
+        "Override certificate pinning",
+        "Remember repeat state",
+        "Remember shuffle state",
+        "Remove viewer discretion dialog",
+        "Return YouTube Dislike",
+        "Scrobbling",
+        "Settings menu filter",
+        "SponsorBlock",
+        "Spoof app version",
+        "Third-party lyrics"
+      ]
+    }
+  ]
+}

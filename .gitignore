@@ -1,0 +1,9 @@
+# Signing keys must never be committed; CI reads the keystore from the KEYSTORE_BASE64 secret.
+*.keystore
+*.jks
+*.bks
+*.p12
+*.pfx
+
+# Python bytecode from running the build script locally
+__pycache__/
