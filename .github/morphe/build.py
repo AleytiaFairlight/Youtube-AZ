@@ -19,6 +19,7 @@ import subprocess
 import sys
 import urllib.parse
 import urllib.request
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -264,6 +265,38 @@ def signing_cert(apk: Path) -> str:
     return hashlib.sha256(certificate).hexdigest().upper()
 
 
+# The result file (-r) changed in Morphe Desktop 1.19:
+#   1.18 and older: patchingSteps [{step, success, message}], appliedPatches [{name, options}], failedPatches [{patch: {name}}]
+#   1.19 and newer: stepResults [{step, success, error}], appliedPatches [name], failedPatches [{name, error}]
+# These helpers read both, so older Morphe Desktop versions can still be pinned in config.json.
+
+
+def _patch_name(entry) -> str | None:
+    if isinstance(entry, str):
+        return entry
+    return entry.get("name") or (entry.get("patch") or {}).get("name")
+
+
+def applied_patches(result: dict) -> list[str]:
+    return [name for p in result.get("appliedPatches", []) if (name := _patch_name(p))]
+
+
+def failed_patches(result: dict) -> list[str]:
+    return [_patch_name(p) or "?" for p in result.get("failedPatches", [])]
+
+
+def failed_steps(result: dict) -> list[tuple[str, str | None]]:
+    steps = result.get("stepResults", result.get("patchingSteps", []))
+    return [(s.get("step"), s.get("error") or s.get("message")) for s in steps if not s.get("success")]
+
+
+def has_app_name(apk: Path, name: str) -> bool:
+    """Whether the binary AndroidManifest.xml carries `name` (Custom branding sets the label there)."""
+    with zipfile.ZipFile(apk) as z:
+        manifest = z.read("AndroidManifest.xml")
+    return name.encode("utf-16-le") in manifest or name.encode("utf-8") in manifest
+
+
 def patch_app(jar: Path, mpp: Path, app: dict, stock: Stock, out_apk: Path, work: Path, keystore: Keystore, cert: str):
     result_file = out_apk.with_suffix(".json")
     cmd = [*java(jar), "patch", "-p", str(mpp), "-e", "Custom branding", f"-OcustomName={app['app_name']}"]
@@ -283,27 +316,27 @@ def patch_app(jar: Path, mpp: Path, app: dict, stock: Stock, out_apk: Path, work
     code = subprocess.run(cmd).returncode
     print("::endgroup::")
 
-    if code or not result_file.exists():
-        raise BuildError(f"{app['name']}: Morphe exited with code {code}")
-    result = json.loads(result_file.read_text(encoding="utf-8"))
-    problems = [f"step {s['step']} failed: {s.get('message')}" for s in result["patchingSteps"] if not s["success"]]
-    problems += [f"patch '{p['patch'].get('name')}' failed" for p in result["failedPatches"]]
+    result = json.loads(result_file.read_text(encoding="utf-8")) if result_file.exists() else None
+    if code or result is None:
+        reason = result and result.get("failureReason")
+        raise BuildError(f"{app['name']}: Morphe exited with code {code}" + (f": {reason}" if reason else ""))
+    problems = [f"{step}: {error}" for step, error in failed_steps(result)]
+    problems += [f"patch '{name}' failed" for name in failed_patches(result)]
+    if result.get("success") is False:
+        problems.append(f"patching failed: {result.get('failureReason')}")
     if result.get("packageVersion") != stock.version:
         problems.append(f"patched version {result.get('packageVersion')} but expected {stock.version}")
-    branding = {
-        o["key"]: o["value"]
-        for p in result["appliedPatches"] if p.get("name") == "Custom branding"
-        for o in p.get("options", [])
-    }
-    if branding.get("customName") != app["app_name"]:
-        problems.append(f"Custom branding was not applied as '{app['app_name']}'")
+    if "Custom branding" not in applied_patches(result):
+        problems.append("Custom branding was not applied")
+    elif not has_app_name(out_apk, app["app_name"]):
+        problems.append(f"the app is not named '{app['app_name']}'")
     if problems:
         raise BuildError(f"{app['name']}: " + "; ".join(problems))
 
     actual = signing_cert(out_apk)
     if actual != cert.replace(":", "").upper():
         raise BuildError(f"{app['name']}: signed with certificate {actual}, expected {cert}. Check the KEYSTORE secrets.")
-    print(f"{out_apk.name}: {len(result['appliedPatches'])} patches applied, signature verified")
+    print(f"{out_apk.name}: {len(applied_patches(result))} patches applied, signature verified")
 
 
 def release_notes(version: str, picks: dict[str, Stock], previous: dict[str, str], apps: list) -> str:

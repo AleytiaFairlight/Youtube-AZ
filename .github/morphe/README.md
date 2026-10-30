@@ -9,9 +9,9 @@ published build (starting at `start_patches_version`), it:
    the previous release, so updates install over the old build).
 3. Patches with the selections in [`config.json`](config.json), renaming the apps to **YouTube AZ** and
    **YouTube Music AZ**, and signs with the same keystore as the Morphe Desktop builds.
-4. Checks that no patch failed and that the APK is signed with the expected certificate, then publishes
-   release `vX.Y.Z` ("Update vX.Y.Z") with `YouTube-AZ-<ver>-patches-X.Y.Z.apk` and
-   `YouTube-Music-AZ-<ver>-patches-X.Y.Z.apk`.
+4. Checks that no patch failed, that the app carries the new name and that the APK is signed with the
+   expected certificate, then publishes release `vX.Y.Z` ("Update vX.Y.Z") with
+   `YouTube-AZ-<ver>-patches-X.Y.Z.apk` and `YouTube-Music-AZ-<ver>-patches-X.Y.Z.apk`.
 
 A release is only published when both apps build. If no uploaded APK is supported, the run fails and the
 error lists the versions to upload; the next run picks the release up again.
@@ -39,6 +39,13 @@ draft so the stock APKs are not public.
 When a patches release adds support for a newer YouTube or YouTube Music, upload that APK to the
 `stock-apks` draft. The next run uses it automatically. Old stock files can be deleted once no future build
 needs them.
+
+## Morphe versions
+
+`morphe_desktop_version` in [`config.json`](config.json) is `latest` by default. Morphe Desktop 1.19 and newer
+patch both the 1.x patches and the 2.x patches (Morphe Patcher 2); Desktop 1.18 and older can't load patches
+1.48.0 or newer. The build reads both result-file formats (Desktop ≤ 1.18 and ≥ 1.19), so an older Desktop can
+still be pinned there, e.g. `"1.18.1"` to rebuild patches up to 1.47.0.
 
 ## Manual runs
 
