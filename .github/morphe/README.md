@@ -11,7 +11,9 @@ published build (starting at `start_patches_version`), it:
    **YouTube Music AZ**, and signs with the same keystore as the Morphe Desktop builds.
 4. Checks that no patch failed, that the app carries the new name and that the APK is signed with the
    expected certificate, then publishes release `vX.Y.Z` ("Update vX.Y.Z") with
-   `YouTube-AZ-<ver>-patches-X.Y.Z.apk` and `YouTube-Music-AZ-<ver>-patches-X.Y.Z.apk`.
+   `YouTube-AZ-<ver>-patches-X.Y.Z.apk`, `YouTube-Music-AZ-<ver>-patches-X.Y.Z.apk` and
+   `MicroG-RE-<ver>.apk`: the universal APK of the newest stable [MicroG RE](https://github.com/MorpheApp/MicroG-RE/releases)
+   release published by the time the patches release came out (pre-releases are skipped).
 
 A release is only published when both apps build. If no uploaded APK is supported, the run fails and the
 error lists the versions to upload; the next run picks the release up again.

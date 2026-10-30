@@ -4,6 +4,7 @@
   "morphe_desktop_repo": "MorpheApp/morphe-desktop",
   "morphe_desktop_version": "latest",
   "stock_release_tag": "stock-apks",
+  "microg_repo": "MorpheApp/MicroG-RE",
   "signing_cert_sha256": "93B3D3E61DBA61AA5C949C2E66AAB00A2A4316B363B602A40388EBC0EF0BF5C5",
   "apps": [
     {

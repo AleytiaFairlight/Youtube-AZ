@@ -339,12 +339,33 @@ def patch_app(jar: Path, mpp: Path, app: dict, stock: Stock, out_apk: Path, work
     print(f"{out_apk.name}: {len(applied_patches(result))} patches applied, signature verified")
 
 
-def release_notes(version: str, picks: dict[str, Stock], previous: dict[str, str], apps: list) -> str:
+def microg_for(releases: list, released_at: str) -> tuple[str, dict] | None:
+    """The newest stable MicroG RE release published by `released_at` (the patches release date) and its APK.
+
+    Since 7.0 MicroG RE ships per-ABI and no-icon variants too; the universal `microg-<version>.apk` with the
+    launcher icon installs on every device.
+    """
+    stable = [
+        r for r in releases
+        if not r["draft"] and not r["prerelease"] and r["published_at"] <= released_at
+        and re.fullmatch(r"v?\d+(?:\.\d+)+", r["tag_name"])
+    ]
+    for release in sorted(stable, key=lambda r: vkey(r["tag_name"].lstrip("v")), reverse=True):
+        version = release["tag_name"].lstrip("v")
+        apk = next((a for a in release["assets"] if a["name"] == f"microg-{version}.apk"), None)
+        if apk:
+            return version, apk
+    return None
+
+
+def release_notes(version: str, picks: dict[str, Stock], previous: dict[str, str], apps: list, microg: str | None) -> str:
     lines = [f"- Update Patches to v{version}"]
     for app in apps:
         stock = picks[app["asset_prefix"]]
         if previous.get(app["asset_prefix"]) != stock.version:
             lines.append(f"- Update {app['name']} to v{stock.version}")
+    if microg:
+        lines.append(f"- MicroG RE v{microg} (install it before YouTube AZ or YouTube Music AZ)")
     return "\n".join(lines)
 
 
@@ -464,6 +485,7 @@ def main() -> int:
     if not keystore.path.is_file() or keystore.path.stat().st_size == 0:
         raise SystemExit("MORPHE_KEYSTORE must point to the signing keystore")
 
+    microg_releases = api_all(f"repos/{cfg['microg_repo']}/releases")
     rows = []
     for version, mpp, picks, errors in plan:
         try:
@@ -479,7 +501,15 @@ def main() -> int:
                 patch_app(jar, mpp, app, stock_apk, out_apk, work, keystore, cfg["signing_cert_sha256"])
                 assets.append(out_apk)
 
-            notes = release_notes(version, picks, previous_build(builds, version), apps)
+            microg = microg_for(microg_releases, patch_releases[version]["published_at"])
+            if microg:
+                microg_version, microg_apk = microg
+                assets.append(download(microg_apk["browser_download_url"], out_dir / f"MicroG-RE-{microg_version}.apk"))
+            else:
+                microg_version = None
+                print(f"::warning title=Patches v{version}::No MicroG RE release with microg-<version>.apk found")
+
+            notes = release_notes(version, picks, previous_build(builds, version), apps, microg_version)
             if args.dry_run:
                 status = "built (dry run)"
             else:
